@@ -1,0 +1,34 @@
+version: "3.3"
+services:
+  traefik:
+    image: "traefik:v2.0.0"
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.docker=true
+      - --api.insecure # Don't do that in production 
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  whoami:
+    image: containous/whoami:v1.3.0
+    command:
+      - --port=8000
+    labels:
+      - "traefik.http.routers.whoami.rule=Host(`k8s-traefik.info`)"
+      - "traefik.http.services.whoami.loadbalancer.server.port=8000"
+  frontend:
+    image: containous/whoami:v1.3.0
+    command:
+      - --port=3000
+    labels:
+      - "traefik.http.routers.frontend.rule=Host(`k8s-traefik.info`) && Path(`/web`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+  backend:
+    image: containous/whoami:v1.3.0
+    command:
+      - --port=9000
+    labels:
+      - "traefik.http.routers.backend.rule=Host(`k8s-traefik.info`) && Path(`/service`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=9000"
