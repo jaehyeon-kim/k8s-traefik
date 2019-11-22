@@ -1,0 +1,46 @@
+version: "3.3"
+services:
+  traefik:
+    image: "traefik:v2.0.0"
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.docker=true
+      - --api.insecure # Don't do that in production
+      # for HTTPS
+      - --entrypoints.websecure.address=:443
+      # - --certificatesresolvers.leresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.leresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.leresolver.acme.email=your@email.com
+      - --certificatesresolvers.leresolver.acme.storage=/acme.json
+      - --certificatesresolvers.leresolver.acme.tlschallenge=true      
+    ports:
+      - "80:80"
+      - "8080:8080"
+      # for HTTPS
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    labels:
+      # global redirect to https
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      # middleware redirect
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+
+  my-app:
+    image: containous/whoami:v1.3.0
+    command:
+      - --port=8082
+    labels:
+      # for custom domain
+      - "traefik.http.routers.my-app.rule=Host(`k8s-traefik.info`)"
+      # for different port
+      - "traefik.http.services.my-app.loadbalancer.server.port=8082"
+      # # for authentication
+      # - "traefik.http.routers.my-app.middlewares=auth"
+      # - "traefik.http.middlewares.auth.basicauth.users=user:$$apr1$$q8eZFHjF$$Fvmkk//V6Btlaf2i/ju5n/" # user/password
+      # for HTTPS
+      - "traefik.http.routers.my-app.entrypoints=websecure"
+      - "traefik.http.routers.my-app.tls.certresolver=leresolver"
