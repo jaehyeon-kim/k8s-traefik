@@ -1,0 +1,51 @@
+version: "3.7"
+services:
+  traefik:
+    image: "traefik:v1.7.19"
+    networks:
+      - traefik-net
+    command: >
+      --docker
+      --docker.domain=k8s-traefik.info
+      --docker.exposedByDefault=false
+      --docker.network=traefik-net
+      --defaultentrypoints=http
+      --entrypoints="Name:http Address::80"
+    ports:
+      - 80:80
+      # - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  whoami:
+    image: emilevauge/whoami
+    networks:
+      - traefik-net
+    command:
+      - --port=3000
+    expose:
+      - 3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-net"
+      - "traefik.frontend.rule=Host:k8s-traefik.info"
+      - "traefik.backend=whoami"
+      - "traefik.port=3000"
+      
+#   frontend:
+#     image: containous/whoami:v1.3.0
+#     command:
+#       - --port=3000
+#     labels:
+#       - "traefik.http.routers.frontend.rule=Host(`k8s-traefik.info`) && Path(`/web`)"
+#       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+#   backend:
+#     image: containous/whoami:v1.3.0
+#     command:
+#       - --port=9000
+#     labels:
+#       - "traefik.http.routers.backend.rule=Host(`k8s-traefik.info`) && Path(`/service`)"
+#       - "traefik.http.services.backend.loadbalancer.server.port=9000"
+
+networks:
+  traefik-net:
+    name: traefik-network
