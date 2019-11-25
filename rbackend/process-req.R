@@ -45,36 +45,38 @@ process_request <- function(url, query, body, headers) {
   
   ## no resource path means no matching function
   if (matched_fun == '') {
-    payload <- list(api_version = '1.0')
+    payload <- whoami()
     if (grepl('application/json', content_type)) 
       payload <- jsonlite::toJSON(payload, auto_unbox = TRUE)
     return (list(payload, content_type, headers)) # default status 200
   }
   
   ## check if all defined arguments are supplied
-  params = jsonlite::fromJSON(unlist(request$pars))
+  params <- request$pars
   defined_args <- formalArgs(matched_fun)[formalArgs(matched_fun) != '...']
-  args_exist <- defined_args %in% names(params)
-  if (!all(args_exist)) {
-    missing_args <- defined_args[!args_exist]
-    payload <- list(message = paste('Missing parameter -', 
-                                    paste(missing_args, collapse = ', ')))
-    status_code <- 400
+  has_undefined_args <- (is.null(defined_args) & length(params) > 0) || !all(names(params) %in% defined_args)
+  if (has_undefined_args) {
+    payload <- list(detail = paste('Undefined parameter -', 
+                                    names(params)[!names(params) %in% defined_args], collapse = ", "))
+    return (list(jsonlite::toJSON(payload, auto_unbox = TRUE), content_type, headers, 400)) 
+  } else {
+    args_exist <- defined_args %in% names(params)
+    if (!all(args_exist)) {
+      missing_args <- defined_args[!args_exist]
+      payload <- list(detail = paste('Missing parameter -', 
+                                      paste(missing_args, collapse = ', ')))
+      return (list(jsonlite::toJSON(payload, auto_unbox = TRUE), content_type, headers, 400)) 
+    }
   }
   
-  if (is.null(payload)) {
-    payload <- tryCatch({
-      do.call(matched_fun, params)
-    }, error = function(err) {
-      print(err)
-      list(message = 'Internal Server Error')
-    })
-  }
-  
-  if (grepl('application/json', content_type)) 
-    payload <- jsonlite::toJSON(payload, auto_unbox = TRUE)
-  
-  return (list(payload, content_type, headers, status_code))
+  tryCatch({
+    payload <- jsonlite::toJSON(do.call(matched_fun, params), auto_unbox = TRUE)
+    return (list(payload, content_type, headers))
+  }, error = function(err) {
+    futile.logger::flog.error(err)    
+    payload <- jsonlite::toJSON(list(detail = err), auto_unbox = TRUE)
+    return (list(payload, content_type, headers, 500))
+  })
 }
 
 # parse headers in process_request()

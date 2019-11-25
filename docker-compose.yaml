@@ -16,17 +16,6 @@ services:
       # - 8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-  forward_auth:
-    image: kapps/trafik-demo:pybackend
-    networks:
-      - traefik-net
-    command: >
-      forward_auth:app
-      --host=0.0.0.0
-      --port=8000
-      --reload
-    volumes:
-      - ./pybackend:/home/app
   pybackend:
     image: kapps/trafik-demo:pybackend
     networks:
@@ -42,12 +31,45 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-net"
       - "traefik.frontend.rule=Host:k8s-traefik.info;PathPrefixStrip:/pybackend"
-      - "traefik.frontend.auth.forward.address=http://forward_auth:8000/auth"
+      - "traefik.frontend.auth.forward.address=http://forward-auth:8000/auth"
       - "traefik.frontend.auth.forward.authResponseHeaders=Authorization"
       - "traefik.backend=pybackend"
       - "traefik.port=8000"
     environment:
       APP_PREFIX: "Python Backend"
+    volumes:
+      - ./pybackend:/home/app
+  rbackend:
+    image: kapps/trafik-demo:rbackend
+    networks:
+      - traefik-net
+    command: >
+      --slave
+      --RS-conf /home/app/rserve.conf
+      --RS-source /home/app/rserve-src.R
+    expose:
+      - 8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-net"
+      - "traefik.frontend.rule=Host:k8s-traefik.info;PathPrefixStrip:/rbackend"
+      - "traefik.frontend.auth.forward.address=http://forward-auth:8000/auth"
+      - "traefik.frontend.auth.forward.authResponseHeaders=Authorization"
+      - "traefik.backend=rbackend"
+      - "traefik.port=8000"
+    environment:
+      APP_PREFIX: "R Backend"
+    volumes:
+      - ./rbackend:/home/app
+  forward-auth:
+    image: kapps/trafik-demo:pybackend
+    networks:
+      - traefik-net
+    command: >
+      forward_auth:app
+      --host=0.0.0.0
+      --port=8000
+      --reload
     volumes:
       - ./pybackend:/home/app
 
