@@ -16,35 +16,40 @@ services:
       # - 8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-  whoami:
-    image: emilevauge/whoami
+  forward_auth:
+    image: kapps/trafik-demo:pybackend
     networks:
       - traefik-net
-    command:
-      - --port=3000
+    command: >
+      forward_auth:app
+      --host=0.0.0.0
+      --port=8000
+      --reload
+    volumes:
+      - ./pybackend:/home/app
+  pybackend:
+    image: kapps/trafik-demo:pybackend
+    networks:
+      - traefik-net
+    command: >
+      main:app
+      --host=0.0.0.0
+      --port=8000
+      --reload
     expose:
-      - 3000
+      - 8000
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-net"
-      - "traefik.frontend.rule=Host:k8s-traefik.info"
-      - "traefik.backend=whoami"
-      - "traefik.port=3000"
-      
-#   frontend:
-#     image: containous/whoami:v1.3.0
-#     command:
-#       - --port=3000
-#     labels:
-#       - "traefik.http.routers.frontend.rule=Host(`k8s-traefik.info`) && Path(`/web`)"
-#       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
-#   backend:
-#     image: containous/whoami:v1.3.0
-#     command:
-#       - --port=9000
-#     labels:
-#       - "traefik.http.routers.backend.rule=Host(`k8s-traefik.info`) && Path(`/service`)"
-#       - "traefik.http.services.backend.loadbalancer.server.port=9000"
+      - "traefik.frontend.rule=Host:k8s-traefik.info;PathPrefixStrip:/pybackend"
+      - "traefik.frontend.auth.forward.address=http://forward_auth:8000/auth"
+      - "traefik.frontend.auth.forward.authResponseHeaders=Authorization"
+      - "traefik.backend=pybackend"
+      - "traefik.port=8000"
+    environment:
+      APP_PREFIX: "Python Backend"
+    volumes:
+      - ./pybackend:/home/app
 
 networks:
   traefik-net:
