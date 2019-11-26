@@ -40,3 +40,7 @@ admission <- function(gre=NULL, gpa=NULL, rank=NULL, ...) {
 whoami <- function() {
     list(title=sprintf("%s API", Sys.getenv("APP_PREFIX", "RSERVE")))
 }
+
+test <- function(a) {
+  list(a = a)
+}

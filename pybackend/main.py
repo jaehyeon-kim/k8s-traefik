@@ -39,8 +39,8 @@ async def admission(*, req: Optional[AdmissionReq]):
     host = os.getenv("RSERVE_HOST", "localhost")
     port = os.getenv("RSERVE_PORT", "8000")
     async with httpx.AsyncClient() as client:
-        jsn = req.json() if req else None
-        r = await client.post("http://{0}:{1}/{2}".format(host, port, "admission"), json=jsn)
+        dat = req.json() if req else None
+        r = await client.post("http://{0}:{1}/{2}".format(host, port, "admission"), data=dat)
         return r.json()
 
 

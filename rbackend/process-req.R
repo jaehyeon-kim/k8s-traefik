@@ -19,14 +19,14 @@ process_request <- function(url, query, body, headers) {
   request$pars <- list()
   if (request$method == 'POST') {
     if (!is.null(body)) {
-      if (is.raw(body)) 
+      if (is.raw(body))  {
         body <- rawToChar(body)
-      body <- jsonlite::fromJSON(body)
-      request$pars <- body
+      }
+      request$pars <- jsonlite::fromJSON(body)
     }
   } else {
-    if (!is.null(query)) {
-      request$pars <- as.list(query)
+    if (!is.null(request$query)) {
+      request$pars <- as.list(request$query)
     }
   }
   
