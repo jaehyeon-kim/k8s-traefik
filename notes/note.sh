@@ -6,7 +6,12 @@ https://docs.traefik.io/v1.7/configuration/backends/docker/
 
 http http://localhost/pybackend "Authorization: Bearer foobar"
 
-
+$ http http://k8s-traefik.info/pybackend
+# HTTP/1.1 403 Forbidden
+# ...
+# {
+#     "detail": "Not authenticated"
+# }
 
 $ http http://k8s-traefik.info/pybackend "Authorization: Bearer foo"
 # HTTP/1.1 401 Unauthorized
@@ -31,9 +36,17 @@ $ http http://k8s-traefik.info/pybackend/foobar "Authorization: Bearer foobar"
 # }
 
 
-http http://k8s-traefik.info/rbackend/whoami
+$ http http://k8s-traefik.info/rbackend "Authorization: Bearer foobar"
+# HTTP/1.1 200 OK
+# ...
+# {
+#     "title": "R Backend API"
+# }
 
-http http://k8s-traefik.info/rbackend/whoami?foo=bar
-
-echo '{"foo": "bar"}' \
-  | http POST http://k8s-traefik.info/rbackend/whoami
+$ echo '{"gre": 600, "rank": "1"}' \
+  | http http://k8s-traefik.info/rbackend/admission "Authorization: Bearer foobar"
+# HTTP/1.1 200 OK
+# ...
+# {
+#     "result": true
+# }

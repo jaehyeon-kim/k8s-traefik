@@ -37,6 +37,8 @@ services:
       - "traefik.port=8000"
     environment:
       APP_PREFIX: "Python Backend"
+      RSERVE_HOST: "rbackend"
+      RSERVE_PORT: "8000"
     volumes:
       - ./pybackend:/home/app
   rbackend:

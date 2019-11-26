@@ -11,6 +11,7 @@ pylint = "*"
 fastapi = "*"
 uvicorn = "*"
 pydantic = "*"
+httpx = "*"
 
 [requires]
 python_version = "3.7"

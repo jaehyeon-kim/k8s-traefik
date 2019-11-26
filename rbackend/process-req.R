@@ -21,9 +21,8 @@ process_request <- function(url, query, body, headers) {
     if (!is.null(body)) {
       if (is.raw(body)) 
         body <- rawToChar(body)
-      if (any(grepl('application/json', request$headers))) 
-        body <- jsonlite::fromJSON(body)
-      request$pars <- as.list(body)
+      body <- jsonlite::fromJSON(body)
+      request$pars <- body
     }
   } else {
     if (!is.null(query)) {
@@ -45,35 +44,26 @@ process_request <- function(url, query, body, headers) {
   
   ## no resource path means no matching function
   if (matched_fun == '') {
-    payload <- whoami()
-    if (grepl('application/json', content_type)) 
-      payload <- jsonlite::toJSON(payload, auto_unbox = TRUE)
+    payload <- jsonlite::toJSON(whoami(), auto_unbox = TRUE)
     return (list(payload, content_type, headers)) # default status 200
   }
   
   ## check if all defined arguments are supplied
   params <- request$pars
-  defined_args <- formalArgs(matched_fun)[formalArgs(matched_fun) != '...']
-  has_undefined_args <- (is.null(defined_args) & length(params) > 0) || !all(names(params) %in% defined_args)
-  if (has_undefined_args) {
-    payload <- list(detail = paste('Undefined parameter -', 
-                                    names(params)[!names(params) %in% defined_args], collapse = ", "))
+  futile.logger::flog.info(params)
+  defined_args <- filter_formals(matched_fun)
+  if (!is.null(defined_args) && !all(defined_args %in% names(params))) {
+    missing_args <- defined_args[!defined_args %in% names(params)]
+    payload <- list(detail = paste('Missing argument -', 
+                                    paste(missing_args, collapse = ', ')))
     return (list(jsonlite::toJSON(payload, auto_unbox = TRUE), content_type, headers, 400)) 
-  } else {
-    args_exist <- defined_args %in% names(params)
-    if (!all(args_exist)) {
-      missing_args <- defined_args[!args_exist]
-      payload <- list(detail = paste('Missing parameter -', 
-                                      paste(missing_args, collapse = ', ')))
-      return (list(jsonlite::toJSON(payload, auto_unbox = TRUE), content_type, headers, 400)) 
-    }
   }
   
   tryCatch({
     payload <- jsonlite::toJSON(do.call(matched_fun, params), auto_unbox = TRUE)
     return (list(payload, content_type, headers))
   }, error = function(err) {
-    futile.logger::flog.error(err)    
+    futile.logger::flog.error(err)
     payload <- jsonlite::toJSON(list(detail = err), auto_unbox = TRUE)
     return (list(payload, content_type, headers, 500))
   })
@@ -94,5 +84,18 @@ parse_headers <- function(headers) {
     return (h.vals)
   } else {
     return (NULL)
+  }
+}
+
+filter_formals <- function(matched_fun) {
+  frmls <- formals(matched_fun)
+  to_exclude <- do.call(c, lapply(names(frmls), function(n) {
+    grepl('...', n) || is.null(frmls[[n]]) || frmls[[n]] != ''
+  }))
+  defined_args <- names(frmls)[!to_exclude]
+  if (length(defined_args) == 0) {
+    NULL
+  } else {
+    defined_args
   }
 }

@@ -29,18 +29,14 @@ set_newdata <- function(args_called) {
   newdata
 }
 
-admission <- function(gre=NULL, gpa=NULL, rank=NULL) {
+admission <- function(gre=NULL, gpa=NULL, rank=NULL, ...) {
   newdata <- set_newdata(args_called = as.list(sys.call()))
   logit <- glm(admit ~ gre + gpa + rank, data = DAT, family = "binomial")
   resp <- predict(logit, newdata=newdata, type="response")
   flog.info(sprintf("resp - %s", resp))
-  resp > 0.5
+  list(result = resp > 0.5)
 }
 
 whoami <- function() {
     list(title=sprintf("%s API", Sys.getenv("APP_PREFIX", "RSERVE")))
-}
-
-tst <- function(a) {
-  list(a=a)
 }
