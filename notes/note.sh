@@ -44,7 +44,15 @@ $ http http://k8s-traefik.info/rbackend "Authorization: Bearer foobar"
 # }
 
 $ echo '{"gre": 600, "rank": "1"}' \
-  | http http://k8s-traefik.info/rbackend/admission "Authorization: Bearer foobar"
+  | http POST http://k8s-traefik.info/rbackend/admission "Authorization: Bearer foobar"
+# HTTP/1.1 200 OK
+# ...
+# {
+#     "result": true
+# }
+
+$ echo '{"gre": 600, "rank": "1"}' \
+  | http POST http://k8s-traefik.info/pybackend/admission "Authorization: Bearer foobar"
 # HTTP/1.1 200 OK
 # ...
 # {
