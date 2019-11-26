@@ -29,6 +29,15 @@ Note that a custom domain including the following is refused.
 .app
 ```
 
+### Generate password for Traefik
+
+```bash
+sudo apt install -y apache2-utils
+
+htpasswd -nb admin password
+# admin:$apr1$h0D7/NGi$FL4JhIEekKG522V9.YbDk0
+```
+
 ### Certificates for localhost
 
 * [Certificates for localhost](https://letsencrypt.org/docs/certificates-for-localhost/)

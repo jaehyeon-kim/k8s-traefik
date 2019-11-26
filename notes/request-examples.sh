@@ -50,3 +50,7 @@ $ echo '{"gre": 600, "rank": "1"}' \
 # {
 #     "result": true
 # }
+
+
+while true; do echo '{"gre": 600, "rank": "1"}' \
+  | http POST http://k8s-traefik.info/pybackend/admission "Authorization: Bearer foobar"; sleep 1; done

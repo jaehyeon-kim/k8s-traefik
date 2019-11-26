@@ -11,15 +11,23 @@ services:
       --docker.network=traefik-net
       --defaultentrypoints=http
       --entrypoints="Name:http Address::80"
+      --api.dashboard
     ports:
       - 80:80
-      # - 8080:8080
+      - 8080:8080
+    labels:
+      - "traefik.frontend.rule=Host:k8s-traefik.info"
+      - "traefik.port=8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   pybackend:
     image: kapps/trafik-demo:pybackend
     networks:
       - traefik-net
+    depends_on:
+      - traefik
+      - forward-auth
+      - rbackend
     command: >
       main:app
       --host=0.0.0.0
@@ -39,12 +47,13 @@ services:
       APP_PREFIX: "Python Backend"
       RSERVE_HOST: "rbackend"
       RSERVE_PORT: "8000"
-    volumes:
-      - ./pybackend:/home/app
   rbackend:
     image: kapps/trafik-demo:rbackend
     networks:
       - traefik-net
+    depends_on:
+      - traefik
+      - forward-auth
     command: >
       --slave
       --RS-conf /home/app/rserve.conf
@@ -61,19 +70,17 @@ services:
       - "traefik.port=8000"
     environment:
       APP_PREFIX: "R Backend"
-    volumes:
-      - ./rbackend:/home/app
   forward-auth:
     image: kapps/trafik-demo:pybackend
     networks:
       - traefik-net
+    depends_on:
+      - traefik
     command: >
       forward_auth:app
       --host=0.0.0.0
       --port=8000
       --reload
-    volumes:
-      - ./pybackend:/home/app
 
 networks:
   traefik-net:
