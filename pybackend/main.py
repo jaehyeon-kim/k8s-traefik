@@ -21,7 +21,7 @@ class PathResp(BaseModel):
 class AdmissionReq(BaseModel):
     gre: int = Schema(None, ge=0, le=800)
     gpa: float = Schema(None, ge=0.0, le=4.0)
-    rank: str = Schema(None, ge="1", le="4")
+    rank: str = Schema(None)
 
 
 class AdmissionResp(BaseModel):
